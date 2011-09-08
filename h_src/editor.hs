@@ -1,3 +1,10 @@
+module Editor (
+-- types:
+  EditWindow,
+
+-- functions:
+  editFile) where
+
 import Control.Applicative
 import Control.Exception
 import System
@@ -115,8 +122,3 @@ editFile fileName = do
   edit $ Just editWin
   endDisplay
 
-main = do
-  args <- getArgs
-  -- Currently only editing one file at a time is supported.
-  if length args == 1 then editFile $ head args
-  else hPutStrLn stderr "Invalid arguments."
