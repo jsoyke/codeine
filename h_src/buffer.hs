@@ -26,6 +26,8 @@ import Data.Char
 data BufferOptions =
   BufferOptions {
     autoIndent :: Bool,
+
+    -- TODO: acknowledge tab options.
     tabStop :: Int,
     useTabs :: Bool
   }
