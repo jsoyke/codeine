@@ -110,8 +110,7 @@ readFileAsBuffer fileName = do
 -- Initialize the display, and start editing a file.
 editFile :: String -> IO ()
 editFile fileName = do
-  initDisplay
-  display <- newDisplay
+  display <- initDisplay
   buf <- readFileAsBuffer fileName
   editWin <- return $ EditWindow {
     buffer = buf,
@@ -120,5 +119,5 @@ editFile fileName = do
     scrollPos = (0, 0)
   }
   edit $ Just editWin
-  endDisplay
+  endDisplay display
 

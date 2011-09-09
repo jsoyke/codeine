@@ -7,7 +7,6 @@ module Display (
 -- functions:
   endDisplay,
   initDisplay,
-  newDisplay,
   refreshDisplay,
   setCursor,
   showLines,
@@ -26,18 +25,12 @@ data Display =
 data Event =
   KeyEvent Key
 
-initDisplay :: IO ()
+-- Initialize display.
+initDisplay :: IO Display
 initDisplay = do
   initCurses
   raw True
   echo False
-
-endDisplay :: IO ()
-endDisplay = do
-  endWin
-
-newDisplay :: IO Display
-newDisplay = do
   (h, w) <- scrSize
   window <- initScr
   keypad window True
@@ -45,6 +38,12 @@ newDisplay = do
     size = (w, h),
     window = window
   }
+
+-- End display, must be called before exiting.
+endDisplay :: Display -> IO ()
+endDisplay display = do
+  wclear $ window display
+  endWin
 
 waitForEvent :: Display -> IO Event
 waitForEvent _ = do
