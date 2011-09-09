@@ -3,11 +3,15 @@ module Buffer (
   Buffer,
     cursorPos,
     text,
+  BufferOptions(BufferOptions),
+    autoIndent,
+    tabStop,
+    useTabs,
 
 -- functions:
-  bufferWithText,
   eraseBack,
   eraseForward,
+  initBuffer,
   insertChar,
   moveCursorLeft,
   moveCursorRight,
@@ -17,8 +21,18 @@ module Buffer (
   splitLine,
   undo) where
 
+import Data.Char
+
+data BufferOptions =
+  BufferOptions {
+    autoIndent :: Bool,
+    tabStop :: Int,
+    useTabs :: Bool
+  }
+
 data Buffer =
   Buffer {
+    options :: BufferOptions,
     text :: [String],
     cursorPos :: (Int, Int),
     lastEditPos :: (Int, Int),
@@ -27,9 +41,10 @@ data Buffer =
   }
 
 -- Create a new buffer containing the provided text.
-bufferWithText :: String -> Buffer
-bufferWithText text =
+initBuffer :: BufferOptions -> String -> Buffer
+initBuffer options text =
   Buffer {
+    options = options,
     text = lines text,
     cursorPos = (0, 0),
     -- The position of the last edit. Used so the cursor
@@ -65,7 +80,7 @@ setText :: Buffer -> String -> Buffer
 setText buf text = setCursor pos newBuf
   where
     pos = cursorPos buf
-    newBuf = Buffer {
+    newBuf = buf {
       text = lines text,
       -- TODO: maintain cursor position after this call?
       cursorPos = (0, 0),
@@ -128,6 +143,13 @@ eraseBack buf = eraseForward count newBuf
     newPos = cursorPos newBuf
     count = if newPos == oldPos then 0 else 1
 
+-- Get the whitespace from the head of a line.
+getIndent :: String -> String
+getIndent [] = ""
+getIndent (h:tail) =
+  if isSpace h then h : getIndent tail
+  else ""
+
 -- Split the line at the current cursor position.
 -- Effectively this inserts a newline.
 -- Undoable.
@@ -145,9 +167,12 @@ splitLine buf =
     below = drop (y+1) $ text buf
     line = text buf !! y
     firstNew = take x line
-    secondNew = drop x line
+    indent =
+      if autoIndent $ options buf then getIndent firstNew
+      else ""
+    secondNew = indent ++ drop x line
     newText = above ++ [firstNew, secondNew] ++ below
-    newCursorPos = (0, y+1)
+    newCursorPos = (length indent, y+1)
 
 -- Move the cursor to the specified position.
 -- Not undoable.

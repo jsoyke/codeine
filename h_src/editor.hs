@@ -105,7 +105,13 @@ edit (Just editWin) = do
 readFileAsBuffer :: String -> IO Buffer
 readFileAsBuffer fileName = do
   text <- readFile fileName
-  return $ bufferWithText text
+  return $ initBuffer opts text
+  where
+    opts = BufferOptions {
+      autoIndent = True,
+      useTabs = False,
+      tabStop = 2
+    }
 
 -- Initialize the display, and start editing a file.
 editFile :: String -> IO ()

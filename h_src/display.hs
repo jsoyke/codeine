@@ -1,6 +1,7 @@
 module Display (
 -- types:
   Display,
+    size,
   Event(KeyEvent),
   Key,
 
@@ -10,7 +11,6 @@ module Display (
   refreshDisplay,
   setCursor,
   showLines,
-  size,
   waitForEvent) where
 
 import System.IO
@@ -45,11 +45,14 @@ endDisplay display = do
   wclear $ window display
   endWin
 
+-- Wait for an event to occur.
 waitForEvent :: Display -> IO Event
 waitForEvent _ = do
   key <- getCh
   return $ KeyEvent key
 
+-- Show lines on the display.
+-- Lines will be truncated if they are too long.
 showLines :: Display -> [String] -> IO ()
 showLines _ [] = return ()
 showLines display lines = doShowLines display 0 lines
@@ -63,9 +66,13 @@ showLines display lines = doShowLines display 0 lines
       wClrToEol win
       doShowLines display (row + 1) lines
 
+-- Set the position of the cursor.
+-- This must be called after 'showLines' even if the position hasn't changed.
 setCursor :: Display -> (Int, Int) -> IO ()
 setCursor display (x, y) =
   wMove (window display) y x
 
+-- Refresh the display.
+-- This must be called for any changed to be made visible.
 refreshDisplay :: Display -> IO ()
 refreshDisplay display = refresh
