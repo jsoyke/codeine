@@ -1,6 +1,6 @@
 module Editor (
 -- types:
-  EditWindow,
+  Editor,
 
 -- functions:
   editFile) where
@@ -14,29 +14,29 @@ import UI.HSCurses.Curses
 import Buffer
 import Display
 
-data EditWindow =
-  EditWindow {
+data Editor =
+  Editor {
     buffer :: Buffer,
     fileName :: String,
     display :: Display,
     scrollPos :: (Int, Int)
   }
 
--- Display the EditWindow.
-showEditWindow :: EditWindow -> IO ()
-showEditWindow editWin = do
+-- Display the Editor.
+showEditor :: Editor -> IO ()
+showEditor editor = do
   assert (screenY >= 0) return ()
   assert (screenY < h) return ()
   showLines disp (take h $ drop scrollY lines)
   setCursor disp (screenX, screenY) 
   refreshDisplay disp
   where
-    disp = display editWin
-    buf = buffer editWin
-    lines = text $ buffer editWin
+    disp = display editor
+    buf = buffer editor
+    lines = text $ buffer editor
     (x, y) = cursorPos buf
     (w, h) = size disp
-    (scrollX, scrollY) = scrollPos editWin
+    (scrollX, scrollY) = scrollPos editor
     screenY = y - scrollY
     screenX = x - scrollX
 
@@ -59,14 +59,14 @@ functionForKey = f
     f (KeyChar c) = insertChar c
     f _ = id
 
--- If the cursor of the EditWindow is out of range of the currently displayed area,
--- scroll the window so that it remains visible.
-scrollToKeepCursorVisible :: EditWindow -> EditWindow
-scrollToKeepCursorVisible editWin = editWin { scrollPos = newScrollPos }
+-- If the cursor of the Editor is out of range of the currently displayed area,
+-- scroll the editor so that it remains visible.
+scrollToKeepCursorVisible :: Editor -> Editor
+scrollToKeepCursorVisible editor = editor { scrollPos = newScrollPos }
   where
-    (cursorX, cursorY) = cursorPos $ buffer editWin
-    (scrollX, scrollY) = scrollPos editWin
-    (w, h) = size $ display editWin
+    (cursorX, cursorY) = cursorPos $ buffer editor
+    (scrollX, scrollY) = scrollPos editor
+    (w, h) = size $ display editor
     -- Get a starting position for the provided range, that will include pos.
     newStart (start, end) pos
       | pos < start = pos
@@ -78,29 +78,32 @@ scrollToKeepCursorVisible editWin = editWin { scrollPos = newScrollPos }
 
 -- Perform the action that the given key results in.
 -- If the action results in an exit, Nothing is returned.
-applyInput :: Key -> EditWindow -> Maybe EditWindow
+applyInput :: Key -> Editor -> IO (Maybe Editor)
 -- TODO: Either allow for more non-editing key combos?
 -- Or consolidate them all into the buffer input?
-applyInput (KeyChar '\ETX') _ = Nothing
-applyInput key window = Just newWindow
+applyInput (KeyChar '\ETX') _ = return Nothing
+applyInput (KeyChar '\SI') editor = do
+  saveBuffer editor
+  return $ Just editor
+applyInput key editor = return $ Just newEditor
   where
-    newBuffer = functionForKey key $ buffer window
+    newBuffer = functionForKey key $ buffer editor
     cursor = cursorPos newBuffer
-    scroll = scrollPos window
-    unscrolled = window { buffer = newBuffer }
-    newWindow = scrollToKeepCursorVisible unscrolled
+    scroll = scrollPos editor
+    unscrolled = editor { buffer = newBuffer }
+    newEditor = scrollToKeepCursorVisible unscrolled
 
-handleEvent :: EditWindow -> Event -> Maybe EditWindow
-handleEvent editWin (KeyEvent key) = applyInput key editWin
+handleEvent :: Editor -> Event -> IO (Maybe Editor)
+handleEvent editor (KeyEvent key) = applyInput key editor
 
 -- Edit the file. This function will loop until editing is complete.
-edit :: Maybe EditWindow -> IO ()
+edit :: Maybe Editor -> IO ()
 edit Nothing = return ()
-edit (Just editWin) = do
-  showEditWindow editWin
-  event <- waitForEvent $ display editWin
-  newWin <- return $ handleEvent editWin event
-  edit newWin
+edit (Just editor) = do
+  showEditor editor
+  event <- waitForEvent $ display editor
+  newEditor <- handleEvent editor event
+  edit newEditor
 
 -- Read an entire file as a buffer.
 readFileAsBuffer :: String -> IO Buffer
@@ -114,17 +117,24 @@ readFileAsBuffer fileName = do
       tabStop = 2
     }
 
+-- Save the buffer to disk.
+saveBuffer :: Editor -> IO ()
+saveBuffer editor = writeFile file txt
+  where
+    file = fileName editor
+    txt = concat [ line ++ "\n" | line <- text $ buffer editor ]
+
 -- Initialize the display, and start editing a file.
 editFile :: String -> IO ()
 editFile fileName = do
   display <- initDisplay
   buf <- readFileAsBuffer fileName
-  editWin <- return $ EditWindow {
+  editor <- return $ Editor {
     buffer = buf,
     fileName = fileName,
     display = display,
     scrollPos = (0, 0)
   }
-  edit $ Just editWin
+  edit $ Just editor
   endDisplay display
 
