@@ -13,6 +13,8 @@ module Buffer (
   eraseForward,
   initBuffer,
   insertChar,
+  insertTab,
+  insertText,
   moveCursorLeft,
   moveCursorRight,
   moveCursorVert,
@@ -94,10 +96,27 @@ setText buf text = setCursor pos newBuf
       nextState = Nothing
     }
 
+-- Inserts a tab.
+-- What characters actually get inserted depend on useTabs and tabStop.
+-- Undoable.
+insertTab :: Buffer -> Buffer
+insertTab buf = insertText tab buf
+  where
+    _useTabs = useTabs $ options buf
+    _tabStop = tabStop $ options buf
+    tab
+      | _useTabs = "\t"
+      | otherwise = replicate _tabStop ' '
+
 -- Insert a character at the current cursor position.
 -- Undoable.
 insertChar :: Char -> Buffer -> Buffer
-insertChar c buf =
+insertChar c buf = insertText [c] buf
+
+-- Insert text at the current cursor position.
+-- Undoable.
+insertText :: String -> Buffer -> Buffer
+insertText t buf =
   buf {
     text = newText,
     cursorPos = newCursorPos,
@@ -107,10 +126,10 @@ insertChar c buf =
   where
     (x, y) = cursorPos buf
     newText = [newLine row line | (row, line) <- zip [0..] $ text buf]
-    newLine row line =
-      if row == y then (take x line) ++ (c:drop x line)
-      else line 
-    newCursorPos = (x + 1, y)
+    newLine row line
+      | row == y = (take x line) ++ t ++ (drop x line)
+      | otherwise = line 
+    newCursorPos = (x + length t, y)
 
 -- Erase a specified number of characters that after the cursor.
 -- Undoable.

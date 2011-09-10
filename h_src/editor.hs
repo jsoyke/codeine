@@ -51,6 +51,7 @@ functionForKey = f
     f KeyRight = moveCursorRight
     f KeyEnter = splitLine
     f KeyBackspace = eraseBack
+    f (KeyChar '\t') = insertTab
     f (KeyChar '\n') = f KeyEnter
     f (KeyChar '\DEL') = f KeyBackspace
     f (KeyChar '\NAK') = undo

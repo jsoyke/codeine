@@ -57,7 +57,7 @@ showLines :: Display -> [String] -> IO ()
 showLines _ [] = return ()
 showLines display lines = doShowLines 0 lines
   where
-    (h, w) = size display
+    (w, h) = size display
     win = window display
     doShowLines row []
       | row < h = do
