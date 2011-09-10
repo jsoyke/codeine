@@ -55,16 +55,19 @@ waitForEvent _ = do
 -- Lines will be truncated if they are too long.
 showLines :: Display -> [String] -> IO ()
 showLines _ [] = return ()
-showLines display lines = doShowLines display 0 lines
+showLines display lines = doShowLines 0 lines
   where
     (h, w) = size display
     win = window display
-    doShowLines _ _ [] = return ()
-    -- TODO: clear lines that don't get redrawn here.
-    doShowLines display row (line:lines) = do
+    doShowLines row []
+      | row < h = do
+        wMove win row 0
+        wClrToEol win
+      | otherwise = return ()
+    doShowLines row (line:lines) = do
       mvWAddStr win row 0 (take w line)
       wClrToEol win
-      doShowLines display (row + 1) lines
+      doShowLines (row + 1) lines
 
 -- Set the position of the cursor.
 -- This must be called after 'showLines' even if the position hasn't changed.

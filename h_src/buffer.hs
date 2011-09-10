@@ -47,7 +47,7 @@ initBuffer :: BufferOptions -> String -> Buffer
 initBuffer options text =
   Buffer {
     options = options,
-    text = lines text,
+    text = pad $ lines text,
     cursorPos = (0, 0),
     -- The position of the last edit. Used so the cursor
     -- is set to the position of the last edit on 'redo'.
@@ -55,6 +55,9 @@ initBuffer options text =
     lastState = Nothing,
     nextState = Nothing
   }
+  where
+    pad [] = [""]
+    pad lines = lines
 
 -- Undo the last undoable action performed on the buffer.
 undo :: Buffer -> Buffer
