@@ -97,13 +97,12 @@ handleEvent :: Editor -> Event -> IO (Maybe Editor)
 handleEvent editor (KeyEvent key) = applyInput key editor
 
 -- Edit the file. This function will loop until editing is complete.
-edit :: Maybe Editor -> IO ()
-edit Nothing = return ()
-edit (Just editor) = do
+edit :: Editor -> IO ()
+edit editor = do
   showEditor editor
   event <- waitForEvent $ display editor
   newEditor <- handleEvent editor event
-  edit newEditor
+  maybe (return ()) edit newEditor
 
 -- Read an entire file as a buffer.
 readFileAsBuffer :: String -> IO Buffer
@@ -135,6 +134,6 @@ editFile fileName = do
     display = display,
     scrollPos = (0, 0)
   }
-  edit $ Just editor
+  edit editor
   endDisplay display
 
