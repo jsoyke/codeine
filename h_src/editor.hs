@@ -13,6 +13,7 @@ import UI.HSCurses.Curses
 
 import Buffer
 import Display
+import Syntax
 
 data Editor =
   Editor {
