@@ -1,37 +1,56 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#include <stdlib.h>
-#include <stdbool.h>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-typedef struct {
-  bool auto_indent;
-  int tab_stop;
-  bool use_tabs;
-} buf_opt_t;
+namespace codeine {
 
-typedef struct {
-  int x, y;
-} buf_pos_t;
+class Buf {
+public:
+  typedef std::vector<std::string> Lines;
 
-typedef struct buf {
-  buf_options_t options;
-  size_t num_lines;
-  char **lines;
-  buf_pos_t cursor_pos;
-  buf_pos_t _last_edit_pos;
-  struct buf *_next_state;
-  struct buf *_prev_state;
-} buf_t;
+  struct Options {
+    bool auto_indent;
+    int tab_stop;
+    bool use_tabs;
+  };
 
-buf_t *buf_create(buf_opt_t opts, const char *text);
+  struct Pos {
+    int row;
+    int col;
+    Pos(int r, int c)
+      : row(r)
+      , col(c) { }
+  };
 
-void buf_destroy(buf_t *buf);
+  class Storage {
+  public:
+    virtual ~Storage() { }
+    virtual bool read(Lines*) = 0;
+    virtual bool save(const Lines&) = 0;
+  };
 
-buf_t *buf_undo(buf_t *buf);
+  Buf(Options, Storage* = NULL);
+  ~Buf();
 
-buf_t *buf_redo(buf_t *buf);
+  void erase(int);
+  void insert_char(char);
+  void insert_string(const string&);
+  void insert_newline();
+  void insert_tab();
+  void move_cursor_horiz(int);
+  void move_cursor_vert(int);
+  void redo();
+  void undo();
 
-buf_t *buf_insert_tab(buf_t *buf);
+  struct _Impl;
+private:
+  std::unique_ptr<_Impl> _storage;
+};
+
+} // namespace codeine
 
 #endif // BUFFER_H_
